@@ -1,11 +1,12 @@
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, GlobalAveragePooling2D, Dropout
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.applications import VGG16
 import numpy as np
 import os, glob, random
 import pandas as pd
 import cv2
+from keras.preprocessing.image import ImageDataGenerator
 from PIL import Image
 
 def load_data(image_file_dir, label):
@@ -38,8 +39,18 @@ transfer_model.trainable = False
 
 model = Sequential([
     transfer_model,
-    Flatten(),
+    #Flatten(),
+    #GlobalAveragePooling2D(),
+    #Conv2D(32, kernel_size=(3, 3), input_shape=(128, 128,3), activation='relu'),
+    #Conv2D(64, kernel_size=(3,3), activation='relu'),
+    #MaxPooling2D(pool_size=(2)),
+    GlobalAveragePooling2D(),
+    Dense(1024, activation= 'relu'),
+    Dropout(0.25),
     Dense(512, activation= 'relu'),
+    Dropout(0.25),
+    Dense(256, activation='relu'),
+    Dropout(0.5),
     Dense(128, activation= 'relu'),
     Dense(64, activation= 'relu'),
     Dense(8, activation= 'softmax')
@@ -56,7 +67,7 @@ checkpointer = ModelCheckpoint(filepath=model_file_name,
 early_stopping = EarlyStopping(monitor='val_loss', patience= 10)
 
 history = model.fit(train_inputs, train_label,
-          batch_size=32,
+          batch_size=50,
           epochs=100,
           validation_split = 0.2, callbacks=[checkpointer, early_stopping])
 
@@ -64,4 +75,4 @@ history = model.fit(train_inputs, train_label,
 print("성능 검증")
 test_inputs, test_label = load_data(test_files_dir,test_label)
 
-loss_and_metrics = model.evaluate(test_inputs, test_label, batch_size=32)
+loss_and_metrics = model.evaluate(test_inputs, test_label, batch_size=16)
